@@ -47,6 +47,7 @@ pkg_installed() {
 remove_pkg_if_installed() {
     PKG_MGR="$1"
     PKG="$2"
+    MANUAL_CMD=""
 
     if ! pkg_installed "$PKG_MGR" "$PKG"; then
         log "未安装 $PKG，跳过"
@@ -55,6 +56,7 @@ remove_pkg_if_installed() {
 
     case "$PKG_MGR" in
         opkg)
+            MANUAL_CMD="opkg remove $PKG"
             if ! OUTPUT="$(opkg remove "$PKG" 2>&1)"; then
                 printf '%s\n' "$OUTPUT"
                 warn "移除 $PKG 失败"
@@ -63,12 +65,13 @@ remove_pkg_if_installed() {
             fi
             ;;
         apk)
+            MANUAL_CMD="apk del $PKG"
             apk del "$PKG" || warn "移除 $PKG 失败"
             ;;
     esac
 
     if pkg_installed "$PKG_MGR" "$PKG"; then
-        die "$PKG 仍未卸载成功，请检查依赖关系或手动执行 opkg remove $PKG"
+        die "$PKG 仍未卸载成功，请检查依赖关系或手动执行: $MANUAL_CMD"
     fi
 }
 
@@ -156,6 +159,8 @@ safe_uninstall_nikki() {
     stop_disable_service nikki
     remove_pkg_if_installed "$PKG_MGR" luci-i18n-nikki-zh-cn
     remove_pkg_if_installed "$PKG_MGR" luci-app-nikki
+    remove_pkg_if_installed "$PKG_MGR" nikki
+    remove_pkg_if_installed "$PKG_MGR" mihomo-meta
 
     if [ "$DELETE_CONFIG" -eq 1 ]; then
         log "删除 Nikki 配置文件"

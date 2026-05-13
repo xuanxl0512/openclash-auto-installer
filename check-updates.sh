@@ -97,13 +97,49 @@ fetch_latest_tag_jsonfilter() {
     NAME="$1"
     URL="$2"
     OUT="$TMP_ROOT/$NAME.json"
-    curl -fsSL --retry 3 --connect-timeout 15 "$URL" -o "$OUT" || return 1
-    jsonfilter -i "$OUT" -e '@.tag_name' 2>/dev/null || true
+    TAG=""
+    if fetch_url "$URL" "$OUT"; then
+        TAG="$(sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' "$OUT" | head -n1)"
+    fi
+    [ -n "$TAG" ] || TAG="$(fetch_latest_tag_page "$URL" "$TMP_ROOT/$NAME.html" || true)"
+    printf '%s\n' "$TAG"
 }
 
 fetch_latest_tag_wget_sed() {
     URL="$1"
-    wget -qO- "$URL" 2>/dev/null | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1
+    OUT="$TMP_ROOT/latest-tag.json"
+    TAG=""
+    if fetch_url "$URL" "$OUT"; then
+        TAG="$(sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' "$OUT" | head -n1)"
+    fi
+    [ -n "$TAG" ] || TAG="$(fetch_latest_tag_page "$URL" "$TMP_ROOT/latest-tag.html" || true)"
+    printf '%s\n' "$TAG"
+}
+
+fetch_latest_tag_page() {
+    API_URL="$1"
+    OUT="$2"
+
+    PAGE_URL="$(printf '%s' "$API_URL" | sed 's|^https://api.github.com/repos/\([^/]*\)/\([^/]*\)/releases/latest$|https://github.com/\1/\2/releases/latest|')"
+    [ "$PAGE_URL" != "$API_URL" ] || return 1
+
+    fetch_url "$PAGE_URL" "$OUT" || return 1
+    sed -n 's|.*href="/[^"]*/releases/tag/\([^"/?#]*\)".*|\1|p' "$OUT" | head -n1
+}
+
+fetch_url() {
+    URL="$1"
+    OUT="$2"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL --retry 3 --connect-timeout 15 "$URL" -o "$OUT" 2>/dev/null && return 0
+    fi
+
+    if command -v wget >/dev/null 2>&1; then
+        wget -qO "$OUT" "$URL" 2>/dev/null && return 0
+    fi
+
+    return 1
 }
 
 print_result() {
@@ -158,25 +194,23 @@ check_openclash() {
 }
 
 check_passwall() {
-    if [ "$PKG_MGR" != "opkg" ]; then
-        print_result "PassWall" "" ""
-        printf '%s\n' "  说明: 当前仅在 opkg 环境下检测 PassWall"
-        return 0
+    if [ "$PKG_MGR" = "opkg" ]; then
+        INSTALLED="$(get_installed_opkg_version luci-app-passwall)"
+    else
+        INSTALLED="$(get_installed_apk_version luci-app-passwall)"
     fi
 
-    INSTALLED="$(get_installed_opkg_version luci-app-passwall)"
     LATEST="$(fetch_latest_tag_wget_sed "$PASSWALL_API" || true)"
     print_result "PassWall" "$INSTALLED" "$LATEST"
 }
 
 check_passwall2() {
-    if [ "$PKG_MGR" != "opkg" ]; then
-        print_result "PassWall2" "" ""
-        printf '%s\n' "  说明: 当前仅在 opkg 环境下检测 PassWall2"
-        return 0
+    if [ "$PKG_MGR" = "opkg" ]; then
+        INSTALLED="$(get_installed_opkg_version luci-app-passwall2)"
+    else
+        INSTALLED="$(get_installed_apk_version luci-app-passwall2)"
     fi
 
-    INSTALLED="$(get_installed_opkg_version luci-app-passwall2)"
     LATEST="$(fetch_latest_tag_wget_sed "$PASSWALL2_API" || true)"
     print_result "PassWall2" "$INSTALLED" "$LATEST"
 }
@@ -222,12 +256,9 @@ main() {
 
     need_cmd sed
     need_cmd head
-    need_cmd curl
-
-    if command -v jsonfilter >/dev/null 2>&1; then
-        :
-    else
-        warn "未检测到 jsonfilter，OpenClash / Nikki / SmartDNS / MosDNS 的最新版本检测可能失败"
+    if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
+        printf '%s\n' "[ERROR] 缺少 curl 或 wget，无法联网检查更新" >&2
+        exit 1
     fi
 
     if command -v opkg >/dev/null 2>&1; then

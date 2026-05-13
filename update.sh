@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-SCRIPT_URL="https://raw.githubusercontent.com/slobys/openclash-auto-installer/master/install.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/slobys/openclash-auto-installer/main/install.sh"
 TMP_FILE="/tmp/openclash-auto-update.sh"
 
 log() {
@@ -21,8 +21,8 @@ chmod +x "$TMP_FILE"
 
 if [ "${1:-}" = "--check" ] || [ "${1:-}" = "--check-update" ]; then
     log "开始检查是否有新版本"
-    sh "$TMP_FILE" --check-update --skip-opkg-update
+    sh "$TMP_FILE" --check-update --skip-pkg-update
 else
     log "开始执行更新"
-    sh "$TMP_FILE" --skip-opkg-update "$@"
+    sh "$TMP_FILE" --skip-pkg-update "$@"
 fi

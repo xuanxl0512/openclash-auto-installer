@@ -4,6 +4,7 @@ set -eu
 LOCKDIR="/tmp/nikki-install.lock"
 FEED_SCRIPT_URL="https://raw.githubusercontent.com/nikkinikki-org/OpenWrt-nikki/main/feed.sh"
 INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/nikkinikki-org/OpenWrt-nikki/main/install.sh"
+NIKKI_REPO_URL="https://nikkinikki.pages.dev"
 
 cleanup() {
     rmdir "$LOCKDIR" 2>/dev/null || true
@@ -41,6 +42,35 @@ refresh_luci() {
     if [ -x /etc/init.d/rpcd ]; then
         /etc/init.d/rpcd restart >/dev/null 2>&1 || warn "rpcd 重启失败"
     fi
+}
+
+detect_nikki_branch() {
+    case "${REL_RAW:-}" in
+        *24.10*) printf 'openwrt-24.10' ;;
+        *25.12*) printf 'openwrt-25.12' ;;
+        SNAPSHOT) printf 'SNAPSHOT' ;;
+        *) printf '' ;;
+    esac
+}
+
+add_nikki_apk_feed() {
+    branch="$(detect_nikki_branch)"
+    [ -n "$branch" ] || die "当前系统版本 ${REL_RAW:-unknown} 暂未被 Nikki 官方 feed 支持"
+
+    arch="${DISTRIB_ARCH:-}"
+    [ -n "$arch" ] || die "无法识别系统架构"
+
+    FEED_URL="$NIKKI_REPO_URL/$branch/$arch/nikki"
+    feed_list="/etc/apk/repositories.d/customfeeds.list"
+
+    log "导入 Nikki apk feed: $FEED_URL"
+    mkdir -p /etc/apk/keys /etc/apk/repositories.d
+    wget -qO /etc/apk/keys/nikki.pem "$NIKKI_REPO_URL/public-key.pem" || die "下载 Nikki apk 公钥失败"
+
+    if [ -f "$feed_list" ] && grep -q nikki "$feed_list"; then
+        sed -i '/nikki/d' "$feed_list"
+    fi
+    printf '%s\n' "$FEED_URL/packages.adb" >> "$feed_list"
 }
 
 if ! mkdir "$LOCKDIR" 2>/dev/null; then
@@ -94,12 +124,14 @@ case "$PKG_MGR" in
         NEW_VER="$(opkg status luci-app-nikki 2>/dev/null | sed -n 's/^Version: //p' | head -n1 || true)"
         ;;
     apk)
-        log "刷新软件源"
-        apk update
         OLD_VER="$(apk info -a luci-app-nikki 2>/dev/null | sed -n 's/^version: //p' | head -n1 || true)"
         log "当前已安装版本: ${OLD_VER:-not installed}"
-        log "按官方包管理方式安装 / 更新 Nikki"
-        apk add nikki luci-app-nikki luci-i18n-nikki-zh-cn
+        add_nikki_apk_feed
+        log "刷新软件源"
+        apk update || die "apk update 失败，请检查 Nikki feed 或网络连接"
+        log "按 Nikki 官方 apk feed 安装 / 更新 Nikki"
+        apk add --allow-untrusted -X "$FEED_URL/packages.adb" mihomo-meta nikki luci-app-nikki || die "安装 Nikki apk 包失败，请检查当前架构是否存在 Nikki 官方构建"
+        apk add --allow-untrusted -X "$FEED_URL/packages.adb" luci-i18n-nikki-zh-cn || warn "安装 Nikki 中文语言包失败"
         NEW_VER="$(apk info -a luci-app-nikki 2>/dev/null | sed -n 's/^version: //p' | head -n1 || true)"
         ;;
 esac

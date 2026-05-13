@@ -50,7 +50,8 @@ usage() {
   --meta-core         强制使用普通 Meta 内核
   --smart-core        强制使用 Smart Meta 内核
   --skip-restart      完成后不尝试重启 openclash / uhttpd
-  --skip-opkg-update  跳过软件源更新（适合你已手动 opkg update 后再次执行）
+  --skip-pkg-update   跳过软件源更新（opkg update / apk update）
+  --skip-opkg-update  兼容旧参数，等同于 --skip-pkg-update
   -h, --help          显示帮助
 EOF_USAGE
 }
@@ -76,7 +77,7 @@ parse_args() {
             --skip-restart)
                 RESTART_SERVICES="0"
                 ;;
-            --skip-opkg-update)
+            --skip-pkg-update|--skip-opkg-update)
                 FORCE_OPKG_UPDATE="0"
                 ;;
             -h|--help)
@@ -352,8 +353,8 @@ check_update_only() {
         log "当前已经是最新版本，无需更新"
     else
         log "检测到新版本可更新"
-        log "如需更新，可执行: sh install.sh --skip-opkg-update"
-        log "如需仅更新插件，可执行: sh install.sh --plugin-only --skip-opkg-update"
+        log "如需更新，可执行: sh install.sh --skip-pkg-update"
+        log "如需仅更新插件，可执行: sh install.sh --plugin-only --skip-pkg-update"
     fi
 }
 
@@ -597,8 +598,8 @@ main() {
     [ -n "$DIST_RELEASE" ] && log "DISTRIB_RELEASE: $DIST_RELEASE"
     if [ -n "$DIST_RELEASE" ] && printf '%s\n' "$DIST_RELEASE" | grep -q '^25\.12'; then
         if [ "$PKG_MGR" = "apk" ]; then
-            warn "检测到 OpenWrt 25.12+ 与 apk 包管理器，OpenClash 兼容性可能有限。"
-            warn "如遇安装失败，请参考 OpenClash 官方文档或使用 OpenWrt 25.11 及更早版本。"
+            warn "检测到 OpenWrt 25.12+ 与 apk 包管理器，将按 apk 兼容路径安装。"
+            warn "如遇安装失败，请保留完整日志，通常是上游包或系统依赖尚未适配。"
         else
             warn "检测到 OpenWrt 25.12+，但包管理器为 $PKG_MGR，请确认当前环境是否正常。"
         fi

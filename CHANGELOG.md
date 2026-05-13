@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.2.2
+
+- `passwall.sh` / `passwall2.sh` 支持 OpenWrt 25.12+ / `apk` 环境：自动匹配上游 `packages-25.12` 目录并下载 `.apk` 安装包
+- `uninstall.sh` 同步优化 `apk` 环境卸载提示，失败时给出正确的 `apk del` 手动命令
+- `nikki.sh` 在 `apk` 环境改为导入 Nikki 官方 `openwrt-25.12` feed 后安装，不再错误依赖 OpenWrt 官方源自带 Nikki 包
+- Nikki 卸载同步移除 `nikki` / `mihomo-meta` 主运行包，避免只卸载 LuCI 后残留核心包
+- `mosdns.sh` 修复 GitHub API 403 兜底逻辑：改为解析 latest tag 后拉取 `expanded_assets`，确保能找到 25.12 架构包
+- `check-updates.sh` 支持在 `apk` 环境下检测已安装 PassWall / PassWall2 版本，并改为 curl/wget 双栈获取最新版本，减少精简固件漏检
+- `install.sh` 新增通用 `--skip-pkg-update` 参数，菜单与 `update.sh` 同步改用该参数，旧的 `--skip-opkg-update` 保留兼容
+- `update.sh` 下载地址从旧 `master` 分支修正为当前 `main` 分支
+- `auto-download-pro.sh` / `test-auto-download.sh` 改为兼容包装器，避免旧的 24.10/aarch64/opkg 固定逻辑在 25.12+ 下误用
+- README 同步更新 PassWall / PassWall2 的 `apk` 兼容说明
+
 ## v1.2.1
 
 - 优化 OpenClash 安装阶段的 `opkg update` 容错：当 Nikki / PassWall 等第三方 feed 临时不可用时，不再直接中断 OpenClash 安装流程，而是警告后继续尝试安装依赖

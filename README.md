@@ -22,6 +22,12 @@
 推荐直接使用菜单模式，安装、更新、检查版本和卸载都在菜单里：
 
 ```sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/slobys/openclash-auto-installer/main/menu.sh)"
+```
+
+如果 GitHub raw 访问慢，可用 jsDelivr：
+
+```sh
 sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/slobys/openclash-auto-installer@main/menu.sh)"
 ```
 
@@ -46,9 +52,9 @@ sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/slobys/openclash-auto-installer@
 
 可尝试但建议先验证：
 
+- OpenWrt 25.12+ / `apk` 环境
 - OpenWrt 23.05.x / 22.03.x
 - 第三方固件或精简固件
-- OpenWrt 25.12+ / `apk` 环境
 
 ---
 
@@ -57,11 +63,23 @@ sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/slobys/openclash-auto-installer@
 | 插件 | 支持内容 | 说明 |
 |------|----------|------|
 | OpenClash | 安装 / 更新 / 核心安装 / 卸载 / 更新检测 | 自动识别 Meta / Smart Meta 内核 |
-| PassWall | 安装 / 更新 / 卸载 / 更新检测 | 当前主要面向 `opkg` 环境 |
-| PassWall2 | 安装 / 更新 / 卸载 / 更新检测 | 当前主要面向 `opkg` 环境 |
+| PassWall | 安装 / 更新 / 卸载 / 更新检测 | 支持 `opkg`；OpenWrt 25.12+ 下尝试安装上游 `.apk` 构建 |
+| PassWall2 | 安装 / 更新 / 卸载 / 更新检测 | 支持 `opkg`；OpenWrt 25.12+ 下尝试安装上游 `.apk` 构建 |
 | Nikki | 安装 / 更新 / 卸载 / 更新检测 | 需要 `firewall4/nftables` |
 | SmartDNS | 安装 / 更新 / 卸载 / 更新检测 | 使用官方 GitHub Release 包 |
 | MosDNS | 安装 / 更新 / 卸载 / 更新检测 | 使用 `sbwml/luci-app-mosdns` GitHub Release 包 |
+
+---
+
+## OpenWrt 25.12+ / apk 说明
+
+OpenWrt 25.12+ 使用 `apk` 包管理器，本项目已同步适配：
+
+- 安装 / 更新
+- 检查更新
+- 卸载
+
+PassWall / PassWall2 在 25.12+ 下会尝试安装上游 `.apk` 构建，实际可用性取决于上游是否发布对应架构包。
 
 ---
 
@@ -69,9 +87,8 @@ sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/slobys/openclash-auto-installer@
 
 - 推荐 OpenWrt / iStoreOS / ImmortalWrt 24.x 及以上，整体更稳定。
 - 低版本、魔改固件、精简固件可能遇到依赖或软件源不兼容。
-- OpenWrt 25.12+ 的 `apk` 环境仍属于初步适配。
-- PassWall / PassWall2 暂不适配 `apk` 环境。
-- Nikki 不支持 `iptables` 防火墙栈。
+- OpenWrt 25.12+ 的 `apk` 环境已做基础适配，但仍可能受上游包影响。
+- Nikki 不支持 `iptables` 防火墙栈，需要 `firewall4/nftables`。
 - SmartDNS 只安装程序和 LuCI 界面，不自动接管或改写 DNS 配置。
 - MosDNS 只安装程序、LuCI 界面和上游 Release 包内的基础数据包，不自动接管或改写 DNS 配置。
 - 卸载默认走安全卸载，只移除主包和对应配置，不做激进清理。
@@ -93,6 +110,8 @@ sh -c "$(curl -fsSL https://cdn.jsdelivr.net/gh/slobys/openclash-auto-installer@
 | `mosdns.sh` | MosDNS 安装 / 更新 |
 | `check-updates.sh` | 检查插件更新 |
 | `uninstall.sh` | 安全卸载插件 |
+| `auto-download-pro.sh` | 旧入口兼容包装器，已转交给 `passwall.sh` |
+| `test-auto-download.sh` | 旧测试入口兼容包装器，已转交给 `passwall.sh` |
 
 ---
 

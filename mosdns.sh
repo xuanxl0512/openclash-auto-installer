@@ -152,11 +152,12 @@ find_asset_url() {
         fi
     fi
 
-    if [ -f "$TMP_ROOT/release.html" ]; then
-        HTML_URL="$(grep -o "/$MOSDNS_REPO/releases/download/[^\"'<> ]*/$ASSET_NAME" "$TMP_ROOT/release.html" | head -n1 || true)"
+    for html in "$TMP_ROOT/release-assets.html" "$TMP_ROOT/release.html"; do
+        [ -f "$html" ] || continue
+        HTML_URL="$(grep -o "/$MOSDNS_REPO/releases/download/[^\"'<> ]*/$ASSET_NAME" "$html" | head -n1 || true)"
         [ -n "$HTML_URL" ] && printf 'https://github.com%s\n' "$HTML_URL"
-        return 0
-    fi
+        [ -n "$HTML_URL" ] && return 0
+    done
 
     return 0
 }
@@ -168,6 +169,11 @@ fetch_release_meta() {
 
     warn "GitHub API 获取 MosDNS Release 信息失败，改用 releases 页面兜底"
     download_url "$MOSDNS_RELEASE_URL" "$TMP_ROOT/release.html" || die "获取 MosDNS 最新 Release 信息失败"
+
+    RELEASE_TAG="$(sed -n 's|.*href="/'"$MOSDNS_REPO"'/releases/tag/\([^"/?#]*\)".*|\1|p' "$TMP_ROOT/release.html" | head -n1 || true)"
+    if [ -n "$RELEASE_TAG" ]; then
+        download_url "https://github.com/$MOSDNS_REPO/releases/expanded_assets/$RELEASE_TAG" "$TMP_ROOT/release-assets.html" || warn "获取 MosDNS Release 资产列表失败"
+    fi
 }
 
 get_installed_version() {

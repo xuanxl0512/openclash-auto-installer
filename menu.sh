@@ -292,7 +292,7 @@ run_action() {
             download_and_run install.sh
             ;;
         openclash-check-update)
-            download_and_run install.sh --check-update --skip-opkg-update
+            download_and_run install.sh --check-update --skip-pkg-update
             ;;
         openclash-plugin-only)
             download_and_run install.sh --plugin-only
@@ -301,10 +301,10 @@ run_action() {
             download_and_run install.sh --core-only
             ;;
         openclash-meta-core)
-            download_and_run install.sh --core-only --meta-core --skip-opkg-update
+            download_and_run install.sh --core-only --meta-core --skip-pkg-update
             ;;
         openclash-smart-core)
-            download_and_run install.sh --core-only --smart-core --skip-opkg-update
+            download_and_run install.sh --core-only --smart-core --skip-pkg-update
             ;;
         passwall)
             download_and_run passwall.sh
@@ -405,10 +405,10 @@ run_install_menu() {
                 download_and_run install.sh --core-only
                 ;;
             4)
-                download_and_run install.sh --core-only --meta-core --skip-opkg-update
+                download_and_run install.sh --core-only --meta-core --skip-pkg-update
                 ;;
             5)
-                download_and_run install.sh --core-only --smart-core --skip-opkg-update
+                download_and_run install.sh --core-only --smart-core --skip-pkg-update
                 ;;
             6)
                 download_and_run passwall.sh
